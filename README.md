@@ -1,69 +1,113 @@
 # Vestaboard-Style Flask Dashboard
 
-A fullscreen dashboard built with Flask and displayed via Chromium on a Raspberry Pi — styled like the iconic Vestaboard.
+A fullscreen dashboard built with Flask and designed to run in kiosk mode on a Raspberry Pi.
 
 ![Screenshot](vesta.jpg)
 
----
+## What this repository contains
 
-## 🚀 Features
+This repo contains a **Python/Flask web app** (`app.py`) plus static/template assets for rendering a Vestaboard-style screen.
 
-- Raspberry Pi-powered fullscreen display
-- Flask app launches on boot
-- Chromium runs in kiosk mode with GPU disabled for Pi 3 compatibility
-- Random red/yellow tile effects to mimic Vestaboard aesthetics
-- Ready for expansion: weather, calendar, system stats, media playback
+It does **not** contain an iOS project (`.xcodeproj` / `.xcworkspace`). If you are looking for the iOS app from this link:
 
----
+- `https://github.com/ngageoint/mage-ios`
 
-## 📦 Project Structure
+that is a separate repository and should be cloned/built independently.
 
-frametv/
-└── vestaboard_flask/
+## Project Structure
+
+```text
+vestaboard-flask/
 ├── app.py
 ├── templates/
+│   └── index.html
 ├── static/
-├── venv/ (ignored)
-├── start_flask.sh
-└── vesta.jpg
+│   └── css/style.css
+├── vesta.jpg
+└── README.md
+```
 
----
+## Run locally (Raspberry Pi)
 
-## 🛠 Setup Guide
-
-### Requirements
-- Raspberry Pi 3B+ or newer
-- Raspberry Pi OS (Bookworm)
-- Python 3
-- Flask
-
-### Installation
+### 1) Install system dependencies
 
 ```bash
-git clone git@github.com:mesatowne/vestaboard-flask.git
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip chromium-browser
+```
+
+### 2) Clone and set up Python environment
+
+```bash
+git clone https://github.com/mesatowne/vestaboard-flask.git
 cd vestaboard-flask
 python3 -m venv venv
 source venv/bin/activate
-pip install flask'''
+pip install --upgrade pip flask
+```
 
-@reboot /home/admin/frametv/vestaboard_flask/start_flask.sh
-
-
-
-# ~/.config/autostart/kiosk.desktop
-[Desktop Entry]
-Type=Application
-Name=Dashboard
-Exec=sh -c 'sleep 20; chromium-browser --kiosk --disable-gpu --no-sandbox http://localhost:5000'
-X-GNOME-Autostart-enabled=true
-
----
-
-### ✅ After Adding It:
-1. Save it into your project as `README.md`
-2. Commit + push:
+### 3) Start the app
 
 ```bash
-git add README.md
-git commit -m "Add polished README"
-git push
+python app.py
+```
+
+Then open:
+
+- `http://localhost:5000` (from the Pi)
+- `http://<your-pi-ip>:5000` (from another device on your network)
+
+## Show it fullscreen on the Pi (kiosk)
+
+Create an autostart file:
+
+```bash
+mkdir -p ~/.config/autostart
+nano ~/.config/autostart/kiosk.desktop
+```
+
+Paste:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=Vestaboard Dashboard
+Exec=sh -c 'sleep 10; chromium-browser --kiosk --disable-gpu --no-sandbox http://localhost:5000'
+X-GNOME-Autostart-enabled=true
+```
+
+## Optional: start Flask on boot
+
+Create a launcher script in the repo root:
+
+```bash
+cat > start_flask.sh <<'SH'
+#!/usr/bin/env bash
+cd /home/pi/vestaboard-flask
+source venv/bin/activate
+python app.py
+SH
+chmod +x start_flask.sh
+```
+
+Then add a crontab entry:
+
+```bash
+crontab -e
+```
+
+Add:
+
+```cron
+@reboot /home/pi/vestaboard-flask/start_flask.sh
+```
+
+## iOS app note
+
+If your goal is to also run/view the **MAGE iOS app**, use the separate repo:
+
+```bash
+git clone https://github.com/ngageoint/mage-ios.git
+```
+
+Open the iOS project in Xcode from that cloned directory (on a Mac with Xcode installed). This Flask repository is not an iOS codebase.
